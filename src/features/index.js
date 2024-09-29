@@ -23,7 +23,7 @@ export class Header extends Component {
         ${tabs
           .map(
             (tab) =>
-              `<li id="${tab?.id}"><a href="${tab?.path}" class="${
+              `<li id="${tab?.id}"><a href="${tab?.path}" class="nav-link ${
                 router.isLocated(tab?.path)
                   ? 'text-blue-600 font-bold'
                   : 'text-gray-600'
@@ -36,17 +36,30 @@ export class Header extends Component {
   }
 
   setEvent() {
+    this.addEvent('click', '.nav-link', (event) => {
+      event.preventDefault();
+      const href = event.target.getAttribute('href');
+      this.navigateTab(href);
+    });
+
     this.addEvent('click', '#logout', (event) => {
       event.preventDefault();
       this.logout();
     });
   }
 
+  // 탭
+  navigateTab(path) {
+    const { router } = this.props;
+    router.navigateTo(path);
+  }
+
   // 로그아웃
   logout() {
-    const { storage, setUserState } = this.props;
+    const { storage, setUserState, router } = this.props;
     storage.removeItem('user');
     setUserState();
+    router.navigateTo(ROUTES.HOME.path); // 로그아웃 후 홈페이지로 이동
   }
 }
 
@@ -167,8 +180,9 @@ export class LoginComponent extends Component {
     const { userApiService } = this.props;
     const userInfo = userApiService.getUser(username);
     if (!userInfo) throw new Error('사용자가 존재하지 않습니다.');
-    const { storage, setUserState } = this.props;
+    const { storage, setUserState, router } = this.props;
     storage.setItem('user', userInfo);
     setUserState(userInfo);
+    router.navigateTo(ROUTES.HOME.path);
   }
 }

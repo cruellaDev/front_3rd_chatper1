@@ -82,13 +82,11 @@ export class Router {
     this.errors[path] = handler;
   }
 
-  // 현재 페이지 확인
   isLocated(path) {
     const { pathname } = this.matchRoute(this.getCurrentPath()) || {};
     return path === pathname;
   }
 
-  // 권한 별 라우트 추가
   addAuths(always = [], authenticated = [], notAuthenticated = []) {
     this.auths.always = [...this.auths.always, ...always];
     this.auths.authenticated = [...this.auths.authenticated, ...authenticated];
@@ -98,7 +96,6 @@ export class Router {
     ];
   }
 
-  // 권한 별 라우트 필터링
   filterRoutesByAuth(isAuthenticated) {
     let routes = [];
     Object.entries(ROUTES).forEach(([key, value]) => {
@@ -112,10 +109,9 @@ export class Router {
     return routes;
   }
 
-  // 동적 라우팅
   matchRoute(path) {
-    return Object.keys(this.routes).reduce((acc, route) => {
-      if (acc) return acc; // 이미 매칭된 라우트가 있으면 그대로 반환
+    return Object.entries(this.routes).reduce((acc, [route, handler]) => {
+      if (acc) return acc;
       const routeRegex = route.replace(/:\w+/g, '([\\w-]+)');
       const regex = new RegExp(`^${routeRegex}$`);
       const match = path.match(regex);
@@ -123,7 +119,7 @@ export class Router {
       if (match) {
         const paramNames = (route.match(/:\w+/g) || []).map((name) =>
           name.substring(1)
-        ); // ['id']
+        );
         const params = {};
 
         paramNames.forEach((param, index) => {
@@ -131,9 +127,9 @@ export class Router {
         });
 
         return {
-          handler: this.routes[route],
+          handler,
           pathname: route,
-          params: params,
+          params,
         };
       }
 
@@ -146,12 +142,18 @@ export class Router {
   }
 
   handleRoute(path) {
-    const { handler, params } = this.matchRoute(path) || {};
-    if (handler) {
-      handler();
+    const matchResult = this.matchRoute(path);
+    if (matchResult) {
+      const { handler, params } = matchResult;
       this.params = params;
+      handler(params);
     } else {
-      this.errors[[NOTFOUND]?.path]();
+      const notFoundHandler = this.errors[NOTFOUND]?.path;
+      if (notFoundHandler) {
+        notFoundHandler();
+      } else {
+        console.error('404 Not Found');
+      }
     }
   }
 }
